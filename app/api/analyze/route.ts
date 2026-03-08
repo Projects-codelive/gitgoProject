@@ -190,8 +190,19 @@ async function performAnalysis(
             routes: routesResult,
         };
 
-        // ── 6. Save to MongoDB ────────────────────────────────────────────
-        const fileTreeStr = JSON.stringify(fileTree);
+        // ── 6. Save to MongoDB & DynamoDB ──────────────────────────────────
+        // Massive repos like facebook/react generate file trees > 10MB, which
+        // crash MongoDB (16MB hard limit) and DynamoDB (400KB hard limit).
+        // We truncate them strictly for database caching.
+        let fileTreeStr = JSON.stringify(fileTree);
+        if (fileTreeStr.length > 500000) {
+            fileTreeStr = JSON.stringify([{ path: "TRUNCATED_DUE_TO_SIZE", type: "blob" }]);
+        }
+
+        let safeKeyFileContents = keyFileContents;
+        if (JSON.stringify(keyFileContents).length > 500000) {
+            safeKeyFileContents = [];
+        }
 
         const mappedMetadata = {
             ...metadata,
@@ -214,7 +225,7 @@ async function performAnalysis(
                 repoStatus,
                 techStack: techStack as unknown as Record<string, unknown>,
                 fileTree: fileTreeStr,
-                keyFileContents,
+                keyFileContents: safeKeyFileContents,
                 llmAnalysis,
                 analyzedAt: new Date(),
                 // Preserve tracking fields on update

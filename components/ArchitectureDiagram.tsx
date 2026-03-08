@@ -303,16 +303,16 @@ function DownloadButton({ repoName }: { repoName?: string }) {
 
     try {
       const fileName = `${repoName || 'architecture'}-diagram.${format}`;
-      
-      const dataUrl = format === 'png' 
+
+      const dataUrl = format === 'png'
         ? await toPng(viewport, {
-            backgroundColor: '#0b1120',
-            quality: 1,
-            pixelRatio: 2,
-          })
+          backgroundColor: '#0b1120',
+          quality: 1,
+          pixelRatio: 2,
+        })
         : await toSvg(viewport, {
-            backgroundColor: '#0b1120',
-          });
+          backgroundColor: '#0b1120',
+        });
 
       const link = document.createElement('a');
       link.download = fileName;
@@ -408,7 +408,7 @@ function ArchitectureDiagramInner({ data, repoName }: ArchitectureDiagramProps) 
         <div className="flex flex-wrap gap-1 ml-1">
           {(Object.entries(typeCounts) as [ArchNodeType, number][]).map(
             ([type, count]) => {
-              const theme = TYPE_THEMES[type];
+              const theme = TYPE_THEMES[type as ArchNodeType] || TYPE_THEMES.backend;
               return (
                 <span
                   key={type}
@@ -466,7 +466,7 @@ function ArchitectureDiagramInner({ data, repoName }: ArchitectureDiagramProps) 
           <MiniMap
             nodeColor={(n) => {
               const archNode = data.nodes.find((an) => an.id === n.id);
-              return TYPE_THEMES[archNode?.type ?? "backend"].miniMapColor;
+              return (TYPE_THEMES[archNode?.type ?? "backend"] || TYPE_THEMES.backend).miniMapColor;
             }}
             style={{
               background: "#1e293b",
