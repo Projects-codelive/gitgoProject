@@ -31,6 +31,9 @@ import { analyzeArchitecture, analyzeRoutes } from "@/lib/llm";
 import { requestDeduplicator } from "@/lib/request-deduplicator";
 import { SmartCache } from "@/lib/smart-cache";
 import { RepoTracker } from "@/lib/repo-tracker";
+import { dynamoSaveRepoAnalysis } from "@/lib/dynamo-cache";
+
+const IS_AWS = process.env.DATABASE_MODE === "dynamodb";
 
 export const maxDuration = 300; // Vercel: allow up to 5 minutes for heavy analysis
 
@@ -228,9 +231,15 @@ async function performAnalysis(
         );
 
         // ── 7. Return result ──────────────────────────────────────────────
-        // Temporarily bypass MongoDB schema for the techStack in the response to test
         const responseData = analysisDoc.toObject ? analysisDoc.toObject() : analysisDoc;
         responseData.techStack = techStack as unknown as Record<string, unknown>;
+
+        // AWS: also persist to DynamoDB so SmartCache reads from there
+        if (IS_AWS) {
+            dynamoSaveRepoAnalysis(normalizedUrl, responseData).catch((e: any) =>
+                console.error("[/api/analyze] DynamoDB save error:", e?.message)
+            );
+        }
 
         return NextResponse.json({ cached: false, data: responseData }, { status: 200 });
     } catch (err: unknown) {

@@ -1,8 +1,11 @@
 "use strict"
 
-// AI-powered resume parser using Groq API
+// AI-powered resume parser
+// LOCAL  (DATABASE_MODE=mongodb):  Uses Groq API (Llama 3.3 70B) — unchanged
+// AWS    (DATABASE_MODE=dynamodb): Uses Amazon Bedrock (Claude 3.5 Haiku) — no API keys needed
+//
 // 1. Extracts raw text from PDF using pdf-parse
-// 2. Sends to Groq (Llama 3.3 70B) for intelligent structured extraction
+// 2. Sends to LLM for intelligent structured extraction
 // 3. Returns clean, structured resume data
 
 export interface SkillGroup {
@@ -89,6 +92,9 @@ Return ONLY valid JSON in this exact format (no markdown, no code fences, no exp
   ]
 }`
 
+import { callBedrock } from "./bedrock-client"
+
+const IS_AWS = process.env.DATABASE_MODE === "dynamodb";
 const GROQ_API_URL = "https://api.groq.com/openai/v1/chat/completions"
 
 /**
@@ -98,10 +104,10 @@ export async function parseResume(pdfBuffer: Buffer): Promise<ParsedResume> {
     // Step 1: Extract raw text from PDF
     // eslint-disable-next-line @typescript-eslint/no-require-imports
     const pdfParse = require("pdf-parse")
-    
+
     let pdfData: any
     let rawText: string
-    
+
     try {
         pdfData = await pdfParse(pdfBuffer)
         rawText = pdfData.text || ""
@@ -119,20 +125,12 @@ export async function parseResume(pdfBuffer: Buffer): Promise<ParsedResume> {
         )
     }
 
-    // Step 2: Send to Groq API for intelligent parsing
-    const apiKey = process.env.GROQ_API_KEY
-    if (!apiKey) {
-        throw new Error("GROQ_API_KEY is not configured")
-    }
+    // Step 2: Send to LLM for intelligent parsing (Bedrock on AWS, Groq on localhost)
+    let aiContent: string | undefined;
 
-    const response = await fetch(GROQ_API_URL, {
-        method: "POST",
-        headers: {
-            "Content-Type": "application/json",
-            Authorization: `Bearer ${apiKey}`,
-        },
-        body: JSON.stringify({
-            model: "llama-3.3-70b-versatile",
+    if (IS_AWS) {
+        // AWS: Amazon Bedrock (Claude 3.5 Haiku) — EC2 IAM Role handles auth
+        const bedrockResponse = await callBedrock({
             messages: [
                 { role: "system", content: SYSTEM_PROMPT },
                 {
@@ -142,21 +140,50 @@ export async function parseResume(pdfBuffer: Buffer): Promise<ParsedResume> {
             ],
             temperature: 0.1,
             max_tokens: 4000,
-            response_format: { type: "json_object" },
-        }),
-    })
+        });
+        aiContent = bedrockResponse.choices[0]?.message?.content;
+        console.log("[ResumeParser] Used Bedrock for parsing");
+    } else {
+        // Localhost: Groq API (unchanged)
+        const apiKey = process.env.GROQ_API_KEY;
+        if (!apiKey) {
+            throw new Error("GROQ_API_KEY is not configured");
+        }
 
-    if (!response.ok) {
-        const errorText = await response.text()
-        console.error("Groq API error:", response.status, errorText)
-        throw new Error(`AI parsing failed: ${response.status}`)
+        const response = await fetch(GROQ_API_URL, {
+            method: "POST",
+            headers: {
+                "Content-Type": "application/json",
+                Authorization: `Bearer ${apiKey}`,
+            },
+            body: JSON.stringify({
+                model: "llama-3.3-70b-versatile",
+                messages: [
+                    { role: "system", content: SYSTEM_PROMPT },
+                    {
+                        role: "user",
+                        content: `Parse this resume text and extract structured data as JSON:\n\n${rawText.slice(0, 8000)}`,
+                    },
+                ],
+                temperature: 0.1,
+                max_tokens: 4000,
+                response_format: { type: "json_object" },
+            }),
+        });
+
+        if (!response.ok) {
+            const errorText = await response.text();
+            console.error("Groq API error:", response.status, errorText);
+            throw new Error(`AI parsing failed: ${response.status}`);
+        }
+
+        const result = await response.json();
+        aiContent = result.choices?.[0]?.message?.content;
+        console.log("[ResumeParser] Used Groq for parsing");
     }
 
-    const result = await response.json()
-    const aiContent = result.choices?.[0]?.message?.content
-
     if (!aiContent) {
-        console.error("Groq response:", JSON.stringify(result).slice(0, 500))
+        console.error("LLM response empty")
         throw new Error("No response from AI")
     }
 

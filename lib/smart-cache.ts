@@ -11,6 +11,15 @@
 import { connectDB } from "./mongodb"
 import { RepositoryAnalysis } from "@/models/RepositoryAnalysis"
 import { RouteCache } from "@/models/RouteCache"
+import {
+  dynamoGetRepoAnalysis,
+  dynamoSaveRepoAnalysis,
+  dynamoGetRouteAnalysis,
+  dynamoSaveRouteAnalysis,
+} from "./dynamo-cache"
+
+// true = AWS deployment (DynamoDB), false = localhost (MongoDB)
+const IS_AWS = process.env.DATABASE_MODE === "dynamodb";
 
 interface CacheOptions {
   ttl?: number // Time to live in milliseconds
@@ -44,10 +53,18 @@ export class SmartCache {
     repoUrl: string,
     options: CacheOptions = {}
   ): Promise<{ data: any; cached: boolean; stale: boolean } | null> {
+    // AWS: DynamoDB cache
+    if (IS_AWS) {
+      const data = await dynamoGetRepoAnalysis(repoUrl);
+      if (!data) return null;
+      return { data, cached: true, stale: false };
+    }
+
+    // Localhost: MongoDB cache (unchanged)
     await connectDB()
 
     const cached = await RepositoryAnalysis.findOne({ repoUrl }).lean()
-    
+
     if (!cached) {
       return null
     }
@@ -90,10 +107,18 @@ export class SmartCache {
     route: string,
     options: CacheOptions = {}
   ): Promise<{ data: any; cached: boolean; stale: boolean } | null> {
+    // AWS: DynamoDB cache
+    if (IS_AWS) {
+      const data = await dynamoGetRouteAnalysis(repoUrl, route);
+      if (!data) return null;
+      return { data, cached: true, stale: false };
+    }
+
+    // Localhost: MongoDB cache (unchanged)
     await connectDB()
 
     const cached = await RouteCache.findOne({ repoUrl, route }).lean()
-    
+
     if (!cached) {
       return null
     }

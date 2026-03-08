@@ -1,14 +1,30 @@
 /**
- * LLM Analysis Service using Groq (llama-3.3-70b-versatile / mixtral-8x7b).
- * Groq provides the fastest inference for large models — ideal for this use case.
+ * LLM Analysis Service — Environment-Aware
+ *
+ * LOCAL  (DATABASE_MODE=mongodb):  Uses Groq (llama-3.3-70b-versatile) — unchanged
+ * AWS    (DATABASE_MODE=dynamodb): Uses Amazon Bedrock (Claude 3.5 Haiku) — no API keys needed
  *
  * Two main functions:
- * 1. analyzeArchitecture — generates overall flow + Mermaid architecture diagram
+ * 1. analyzeArchitecture — generates overall flow + architecture diagram
  * 2. analyzeRoutes       — extracts and describes all routes in structured JSON
+ *
+ * Response quality is identical — same prompts, same logic, different provider.
  */
 import Groq from "groq-sdk";
+import { callBedrock } from "./bedrock-client";
 import { truncate } from "./utils";
 import type { KeyFile, TechStack, TreeItem, TechStackCategory } from "./github";
+
+// ─── Environment Switch ───────────────────────────────────────────────────────
+// true  → AWS deployment: use Amazon Bedrock (Claude 3.5 Haiku)
+// false → localhost: use Groq (llama-3.3-70b-versatile) — 100% unchanged
+const IS_AWS = process.env.DATABASE_MODE === "dynamodb";
+
+if (IS_AWS) {
+    console.log("[LLM] Mode: Amazon Bedrock (Claude 3.5 Haiku)");
+} else {
+    console.log("[LLM] Mode: Groq (llama-3.3-70b-versatile)");
+}
 
 function formatTechStack(techStack: TechStack): string {
     let s = "";
@@ -23,7 +39,7 @@ function formatTechStack(techStack: TechStack): string {
     return s.trim() || "None detected";
 }
 
-// ─── Groq Client Pool ────────────────────────────────────────────────────────
+// ─── Groq Client Pool (localhost only) ───────────────────────────────────────
 // Four separate clients to distribute TPM load across 4 API keys:
 //   groqMain  → GROQ_API_KEY   : all architecture analysis + deep route analysis
 //   groq1     → GROQ_API_KEY_1 : file-identification for routes (index % 3 === 0)
@@ -52,17 +68,13 @@ function pickSecondaryClient(routeIndex: number): Groq {
 
 /** Randomly pick between the two dedicated ARCHI keys to load balance diagram generation */
 function pickArchitectureClient(): Groq {
-    // Fallback to main if Archi keys aren't set in environment
     if (!process.env.GROQ_API_KEY_ARCHI_1) return groqMain;
-
     return Math.random() > 0.5 ? groqArchi1 : groqArchi2;
 }
 
 /** Round-robin load balancer for Open Source Repo Recommendation generation */
 function pickMatchClient(): Groq {
     if (!process.env.GROQ_API_KEY_FOR_OPEN_SOUCE_FINDING_1) return groqMain;
-
-    // Simple randomizer to distribute the heavy generation requests
     const rand = Math.random();
     if (rand < 0.33) return groqMatch1;
     if (rand < 0.66) return groqMatch2;
@@ -70,7 +82,7 @@ function pickMatchClient(): Groq {
 }
 
 /**
- * Wrapper for Groq API calls with rate limit error handling
+ * Groq wrapper with rate limit handling (localhost only)
  */
 async function callGroqWithErrorHandling(
     client: Groq,
@@ -79,20 +91,43 @@ async function callGroqWithErrorHandling(
     try {
         return await client.chat.completions.create(params);
     } catch (error: any) {
-        // Check if it's a rate limit error
         if (error?.error?.code === "rate_limit_exceeded" || error?.status === 429) {
             const errorMsg = error?.error?.message || "Rate limit exceeded";
             console.error("[Groq] Rate limit hit:", errorMsg);
-
             throw new Error(`429 RateLimitExhausted: ${errorMsg}`);
         }
-
-        // Re-throw other errors
         throw error;
     }
 }
 
-// Model to use — llama-3.3-70b-versatile is the best available on Groq's free tier
+/**
+ * Unified LLM caller — routes to Bedrock (AWS) or Groq (localhost) transparently.
+ * Same prompts, same response shape, same quality on both environments.
+ */
+async function callLLM(
+    groqClient: Groq,
+    params: {
+        messages: Array<{ role: "system" | "user"; content: string }>;
+        max_tokens?: number;
+        temperature?: number;
+        stream?: false;
+        model?: string;
+    }
+): Promise<{ choices: Array<{ message: { content: string } }> }> {
+    if (IS_AWS) {
+        // AWS: Amazon Bedrock (Claude 3.5 Haiku) — uses EC2 IAM Role, no API keys needed
+        return callBedrock({
+            messages: params.messages,
+            max_tokens: params.max_tokens,
+            temperature: params.temperature,
+        });
+    }
+    // Localhost: Groq — unchanged behavior
+    return callGroqWithErrorHandling(groqClient, params as any) as any;
+}
+
+// Model to use on localhost — llama-3.3-70b-versatile is the best on Groq's free tier
+// (On AWS, Claude 3.5 Haiku is used automatically via callLLM)
 const MODEL = "llama-3.3-70b-versatile";
 
 /**
@@ -265,7 +300,7 @@ Return ONLY the JSON object.`;
 
     // 5000 max_tokens keeps us under the 12k TPM threshold for the dedicated key
     const client = pickArchitectureClient();
-    const response = await callGroqWithErrorHandling(client, {
+    const response = await callLLM(client, {
         model: MODEL,
         max_tokens: 5000,
         temperature: 0.2,
@@ -376,7 +411,7 @@ Rules:
 
 Return ONLY the JSON array.`;
 
-    const response = await callGroqWithErrorHandling(groqMain, {
+    const response = await callLLM(groqMain, {
         model: MODEL,
         max_tokens: 3000,
         temperature: 0.2,
@@ -431,7 +466,7 @@ Return a JSON array of up to 10 strings representing the exact file paths.`;
     // Use key1 / key2 alternately to distribute TPM load away from the main key
     const client = pickSecondaryClient(routeIndex);
 
-    const response = await callGroqWithErrorHandling(client, {
+    const response = await callLLM(client, {
         model: MODEL,
         max_tokens: 1000,
         temperature: 0.1,
@@ -512,7 +547,7 @@ Output exactly the two headers ### FLOW_VISUALIZATION and ### EXECUTION_TRACE fo
     // Distribute load across secondary keys for routing analysis to prevent TPM exhaustion
     const client = pickSecondaryClient(routeIndex);
 
-    const response = await callGroqWithErrorHandling(client, {
+    const response = await callLLM(client, {
         model: MODEL,
         max_tokens: 3000,
         temperature: 0.2,
@@ -727,9 +762,7 @@ Output ONLY this JSON structure, nothing else:
   ]
 }`;
 
-    // Try each match client in order — if all 429, fall through to groqMain as last resort.
-    const clientsToTry = [groqMatch1, groqMatch2, groqMatch3, groqMain];
-    const params = {
+    const llmParams = {
         model: MODEL,
         max_tokens: 2000,
         temperature: 0.1,
@@ -740,24 +773,41 @@ Output ONLY this JSON structure, nothing else:
         ]
     };
 
-    for (let i = 0; i < clientsToTry.length; i++) {
+    if (IS_AWS) {
+        // AWS: single Bedrock call — no rate limit keys needed
         try {
-            const response = await callGroqWithErrorHandling(clientsToTry[i], params) as any;
+            const response = await callLLM(groqMain, llmParams) as any;
             const text: string = response.choices[0]?.message?.content ?? "{}";
             try {
                 return extractJSON<UserDomainProfile>(text);
             } catch {
                 console.error("[analyzeProfileForDomains] JSON parse failed:", text.slice(0, 300));
-                break; // bad JSON — no point retrying with another key
             }
         } catch (err: any) {
-            const isRateLimit = err?.message?.includes("429") || err?.status === 429;
-            if (isRateLimit && i < clientsToTry.length - 1) {
-                console.warn(`[analyzeProfileForDomains] Key ${i + 1} rate-limited, trying next key...`);
-                continue;
+            console.error("[analyzeProfileForDomains] Bedrock call failed:", err?.message);
+        }
+    } else {
+        // Localhost: try each Groq key in order — if all 429, fall through to groqMain
+        const clientsToTry = [groqMatch1, groqMatch2, groqMatch3, groqMain];
+        for (let i = 0; i < clientsToTry.length; i++) {
+            try {
+                const response = await callGroqWithErrorHandling(clientsToTry[i], llmParams) as any;
+                const text: string = response.choices[0]?.message?.content ?? "{}";
+                try {
+                    return extractJSON<UserDomainProfile>(text);
+                } catch {
+                    console.error("[analyzeProfileForDomains] JSON parse failed:", text.slice(0, 300));
+                    break;
+                }
+            } catch (err: any) {
+                const isRateLimit = err?.message?.includes("429") || err?.status === 429;
+                if (isRateLimit && i < clientsToTry.length - 1) {
+                    console.warn(`[analyzeProfileForDomains] Key ${i + 1} rate-limited, trying next key...`);
+                    continue;
+                }
+                console.error(`[analyzeProfileForDomains] Key ${i + 1} failed:`, err?.message);
+                break;
             }
-            console.error(`[analyzeProfileForDomains] Key ${i + 1} failed:`, err?.message);
-            break;
         }
     }
 
@@ -896,7 +946,7 @@ Return ONLY this exact JSON structure:
     const finalTemperature = randomSeed ? 0.7 : 0.2;
 
     const client = pickMatchClient();
-    const response = await callGroqWithErrorHandling(client, {
+    const response = await callLLM(client, {
         model: MODEL,
         max_tokens: 5000,
         temperature: finalTemperature,

@@ -11,6 +11,7 @@
     "test:pipeline": "tsx scripts/test-repo-pipeline.ts"
   },
   "dependencies": {
+    "@aws-sdk/client-bedrock-runtime": "^3.1004.0",
     "@aws-sdk/client-dynamodb": "^3.1004.0",
     "@aws-sdk/client-s3": "^3.1004.0",
     "@aws-sdk/lib-dynamodb": "^3.1004.0",

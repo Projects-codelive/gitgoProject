@@ -1,0 +1,52 @@
+{
+  "Version": "2012-10-17",
+  "Statement": [
+    {
+      "Sid": "BedrockAccess",
+      "Effect": "Allow",
+      "Action": [
+        "bedrock:InvokeModel",
+        "bedrock:InvokeModelWithResponseStream"
+      ],
+      "Resource": [
+        "arn:aws:bedrock:us-east-1::foundation-model/google.gemma-3-27b-it",
+        "arn:aws:bedrock:us-east-1::foundation-model/amazon.nova-pro-v1:0",
+        "arn:aws:bedrock:us-east-1::foundation-model/anthropic.claude-3-5-sonnet-20241022-v2:0"
+      ]
+    },
+    {
+      "Sid": "DynamoDBAccess",
+      "Effect": "Allow",
+      "Action": [
+        "dynamodb:GetItem",
+        "dynamodb:PutItem",
+        "dynamodb:UpdateItem",
+        "dynamodb:DeleteItem",
+        "dynamodb:Query",
+        "dynamodb:Scan"
+      ],
+      "Resource": [
+        "arn:aws:dynamodb:us-east-1:*:table/GitGo-Recommendationsions",
+        "arn:aws:dynamodb:us-east-1:*:table/GitGo-Repositorieses",
+        "arn:aws:dynamodb:us-east-1:*:table/GitGo-ContributorFriendlyRepoes",
+        "arn:aws:dynamodb:us-east-1:*:table/GitGo-Portfolioes",
+        "arn:aws:dynamodb:us-east-1:*:table/GitGo-RepositoryAnalysises",
+        "arn:aws:dynamodb:us-east-1:*:table/GitGo-RouteCacheses"
+      ]
+    },
+    {
+      "Sid": "S3Access",
+      "Effect": "Allow",
+      "Action": [
+        "s3:GetObject",
+        "s3:PutObject",
+        "s3:DeleteObject",
+        "s3:ListBucket"
+      ],
+      "Resource": [
+        "arn:aws:s3:::your-s3-bucket-name/*",
+        "arn:aws:s3:::your-s3-bucket-name"
+      ]
+    }
+  ]
+}
