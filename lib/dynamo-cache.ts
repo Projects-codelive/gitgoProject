@@ -20,7 +20,13 @@ const TTL_7_DAYS_SECONDS = 7 * 24 * 60 * 60;
 const ddbClient = new DynamoDBClient({
     region: process.env.AWS_REGION || "us-east-1",
 });
-const docClient = DynamoDBDocumentClient.from(ddbClient);
+const docClient = DynamoDBDocumentClient.from(ddbClient, {
+    marshallOptions: {
+        removeUndefinedValues: true,
+        convertEmptyValues: true,
+        convertClassInstanceToMap: true,
+    }
+});
 
 const ANALYSIS_TABLE = process.env.AWS_DYNAMODB_ANALYSIS || "GitGo-RepoAnalysis";
 const ROUTE_TABLE = process.env.AWS_DYNAMODB_ROUTE_CACHE || "GitGo-RouteCache";
