@@ -11,20 +11,10 @@
  * Response quality is identical — same prompts, same logic, different provider.
  */
 import Groq from "groq-sdk";
-import { callBedrock } from "./bedrock-client";
 import { truncate } from "./utils";
 import type { KeyFile, TechStack, TreeItem, TechStackCategory } from "./github";
 
-// ─── Environment Switch ───────────────────────────────────────────────────────
-// true  → AWS deployment: use Amazon Bedrock (Claude 3.5 Haiku)
-// false → localhost: use Groq (llama-3.3-70b-versatile) — 100% unchanged
-const IS_AWS = process.env.DATABASE_MODE === "dynamodb";
-
-if (IS_AWS) {
-    console.log("[LLM] Mode: Amazon Bedrock (Claude 3.5 Haiku)");
-} else {
-    console.log("[LLM] Mode: Groq (llama-3.3-70b-versatile)");
-}
+console.log("[LLM] Mode: Groq (llama-3.3-70b-versatile)");
 
 function formatTechStack(techStack: TechStack): string {
     let s = "";
@@ -101,8 +91,7 @@ async function callGroqWithErrorHandling(
 }
 
 /**
- * Unified LLM caller — routes to Bedrock (AWS) or Groq (localhost) transparently.
- * Same prompts, same response shape, same quality on both environments.
+ * Unified LLM caller — uses Groq transparently.
  */
 async function callLLM(
     groqClient: Groq,
@@ -114,15 +103,6 @@ async function callLLM(
         model?: string;
     }
 ): Promise<{ choices: Array<{ message: { content: string } }> }> {
-    if (IS_AWS) {
-        // AWS: Amazon Bedrock (Claude 3.5 Haiku) — uses EC2 IAM Role, no API keys needed
-        return callBedrock({
-            messages: params.messages,
-            max_tokens: params.max_tokens,
-            temperature: params.temperature,
-        });
-    }
-    // Localhost: Groq — unchanged behavior
     return callGroqWithErrorHandling(groqClient, params as any) as any;
 }
 
@@ -773,41 +753,26 @@ Output ONLY this JSON structure, nothing else:
         ]
     };
 
-    if (IS_AWS) {
-        // AWS: single Bedrock call — no rate limit keys needed
+    // Try each Groq key in order — if all 429, fall through to groqMain
+    const clientsToTry = [groqMatch1, groqMatch2, groqMatch3, groqMain];
+    for (let i = 0; i < clientsToTry.length; i++) {
         try {
-            const response = await callLLM(groqMain, llmParams) as any;
+            const response = await callGroqWithErrorHandling(clientsToTry[i], llmParams) as any;
             const text: string = response.choices[0]?.message?.content ?? "{}";
             try {
                 return extractJSON<UserDomainProfile>(text);
             } catch {
                 console.error("[analyzeProfileForDomains] JSON parse failed:", text.slice(0, 300));
-            }
-        } catch (err: any) {
-            console.error("[analyzeProfileForDomains] Bedrock call failed:", err?.message);
-        }
-    } else {
-        // Localhost: try each Groq key in order — if all 429, fall through to groqMain
-        const clientsToTry = [groqMatch1, groqMatch2, groqMatch3, groqMain];
-        for (let i = 0; i < clientsToTry.length; i++) {
-            try {
-                const response = await callGroqWithErrorHandling(clientsToTry[i], llmParams) as any;
-                const text: string = response.choices[0]?.message?.content ?? "{}";
-                try {
-                    return extractJSON<UserDomainProfile>(text);
-                } catch {
-                    console.error("[analyzeProfileForDomains] JSON parse failed:", text.slice(0, 300));
-                    break;
-                }
-            } catch (err: any) {
-                const isRateLimit = err?.message?.includes("429") || err?.status === 429;
-                if (isRateLimit && i < clientsToTry.length - 1) {
-                    console.warn(`[analyzeProfileForDomains] Key ${i + 1} rate-limited, trying next key...`);
-                    continue;
-                }
-                console.error(`[analyzeProfileForDomains] Key ${i + 1} failed:`, err?.message);
                 break;
             }
+        } catch (e: any) {
+            const isRateLimit = e.message?.includes("429");
+            if (isRateLimit && i < clientsToTry.length - 1) {
+                console.warn(`[ProfileAnalyzer] Key ${i + 1} rate limited. Trying next key...`);
+                continue;
+            }
+            console.error(`[ProfileAnalyzer] Failed on key ${i + 1}:`, e.message);
+            if (i === clientsToTry.length - 1) break;
         }
     }
 

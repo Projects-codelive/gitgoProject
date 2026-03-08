@@ -92,9 +92,6 @@ Return ONLY valid JSON in this exact format (no markdown, no code fences, no exp
   ]
 }`
 
-import { callBedrock } from "./bedrock-client"
-
-const IS_AWS = process.env.DATABASE_MODE === "dynamodb";
 const GROQ_API_URL = "https://api.groq.com/openai/v1/chat/completions"
 
 /**
@@ -125,12 +122,22 @@ export async function parseResume(pdfBuffer: Buffer): Promise<ParsedResume> {
         )
     }
 
-    // Step 2: Send to LLM for intelligent parsing (Bedrock on AWS, Groq on localhost)
+    // Step 2: Send to LLM for intelligent parsing
     let aiContent: string | undefined;
 
-    if (IS_AWS) {
-        // AWS: Amazon Bedrock (Claude 3.5 Haiku) — EC2 IAM Role handles auth
-        const bedrockResponse = await callBedrock({
+    const apiKey = process.env.GROQ_API_KEY;
+    if (!apiKey) {
+        throw new Error("GROQ_API_KEY is not configured");
+    }
+
+    const response = await fetch(GROQ_API_URL, {
+        method: "POST",
+        headers: {
+            "Content-Type": "application/json",
+            Authorization: `Bearer ${apiKey}`,
+        },
+        body: JSON.stringify({
+            model: "llama-3.3-70b-versatile",
             messages: [
                 { role: "system", content: SYSTEM_PROMPT },
                 {
@@ -140,47 +147,19 @@ export async function parseResume(pdfBuffer: Buffer): Promise<ParsedResume> {
             ],
             temperature: 0.1,
             max_tokens: 4000,
-        });
-        aiContent = bedrockResponse.choices[0]?.message?.content;
-        console.log("[ResumeParser] Used Bedrock for parsing");
-    } else {
-        // Localhost: Groq API (unchanged)
-        const apiKey = process.env.GROQ_API_KEY;
-        if (!apiKey) {
-            throw new Error("GROQ_API_KEY is not configured");
-        }
+            response_format: { type: "json_object" },
+        }),
+    });
 
-        const response = await fetch(GROQ_API_URL, {
-            method: "POST",
-            headers: {
-                "Content-Type": "application/json",
-                Authorization: `Bearer ${apiKey}`,
-            },
-            body: JSON.stringify({
-                model: "llama-3.3-70b-versatile",
-                messages: [
-                    { role: "system", content: SYSTEM_PROMPT },
-                    {
-                        role: "user",
-                        content: `Parse this resume text and extract structured data as JSON:\n\n${rawText.slice(0, 8000)}`,
-                    },
-                ],
-                temperature: 0.1,
-                max_tokens: 4000,
-                response_format: { type: "json_object" },
-            }),
-        });
-
-        if (!response.ok) {
-            const errorText = await response.text();
-            console.error("Groq API error:", response.status, errorText);
-            throw new Error(`AI parsing failed: ${response.status}`);
-        }
-
-        const result = await response.json();
-        aiContent = result.choices?.[0]?.message?.content;
-        console.log("[ResumeParser] Used Groq for parsing");
+    if (!response.ok) {
+        const errorText = await response.text();
+        console.error("Groq API error:", response.status, errorText);
+        throw new Error(`AI parsing failed: ${response.status}`);
     }
+
+    const result = await response.json();
+    aiContent = result.choices?.[0]?.message?.content;
+    console.log("[ResumeParser] Used Groq for parsing");
 
     if (!aiContent) {
         console.error("LLM response empty")
