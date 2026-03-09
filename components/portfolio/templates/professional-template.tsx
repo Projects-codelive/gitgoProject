@@ -14,19 +14,19 @@ export function ProfessionalTemplate({ profile, technologies, theme }: Professio
   const { colors } = theme
   const userName = profile.user.name || profile.user.login
   const userBio = profile.user.bio || "Developer | Open Source Contributor"
-  
+
   const topProjects = [...profile.repos]
     .sort((a, b) => b.stargazers_count - a.stargazers_count)
     .slice(0, 6)
-  
+
   const topSkills = technologies?.mostUsed?.slice(0, 12) || []
 
   return (
-    <div 
+    <div
       className="min-h-screen"
-      style={{ 
+      style={{
         background: colors.background,
-        color: colors.text 
+        color: colors.text
       }}
     >
       {/* Professional Header */}
@@ -38,7 +38,7 @@ export function ProfessionalTemplate({ profile, technologies, theme }: Professio
               {userName.slice(0, 2).toUpperCase()}
             </AvatarFallback>
           </Avatar>
-          
+
           <div className="flex-1">
             <h1 className="mb-2 text-3xl font-bold" style={{ color: colors.text }}>
               {userName}
@@ -46,7 +46,7 @@ export function ProfessionalTemplate({ profile, technologies, theme }: Professio
             <p className="mb-4 text-lg" style={{ color: colors.textMuted }}>
               {userBio}
             </p>
-            
+
             <div className="flex flex-wrap gap-4 text-sm" style={{ color: colors.textMuted }}>
               {profile.user.location && (
                 <span className="flex items-center gap-1.5">
@@ -93,7 +93,7 @@ export function ProfessionalTemplate({ profile, technologies, theme }: Professio
             Professional Summary
           </h2>
           <div className="rounded-lg border p-6" style={{ borderColor: colors.border, background: colors.surface }}>
-            <div className="grid grid-cols-3 gap-8 text-center">
+            <div className="grid grid-cols-1 md:grid-cols-3 gap-8 text-center">
               <div>
                 <div className="text-3xl font-bold" style={{ color: colors.primary }}>
                   {profile.stats.totalRepos}
@@ -132,7 +132,7 @@ export function ProfessionalTemplate({ profile, technologies, theme }: Professio
             <div className="rounded-lg border p-6" style={{ borderColor: colors.border, background: colors.surface }}>
               <div className="grid gap-4 md:grid-cols-2">
                 {topSkills.map((skill: any) => (
-                  <div 
+                  <div
                     key={skill.technology}
                     className="flex items-center justify-between rounded-md border p-3"
                     style={{ borderColor: colors.border }}
@@ -140,11 +140,11 @@ export function ProfessionalTemplate({ profile, technologies, theme }: Professio
                     <span className="font-medium" style={{ color: colors.text }}>
                       {skill.technology}
                     </span>
-                    <span 
+                    <span
                       className="rounded-full px-3 py-1 text-xs font-medium"
-                      style={{ 
+                      style={{
                         background: `${colors.primary}20`,
-                        color: colors.primary 
+                        color: colors.primary
                       }}
                     >
                       {skill.totalProjects} {skill.totalProjects === 1 ? 'project' : 'projects'}
@@ -190,7 +190,7 @@ export function ProfessionalTemplate({ profile, technologies, theme }: Professio
                       <ExternalLink className="h-5 w-5" />
                     </a>
                   </div>
-                  
+
                   <div className="mb-4 flex items-center gap-6 text-sm" style={{ color: colors.textMuted }}>
                     {project.language && (
                       <span className="font-medium" style={{ color: colors.text }}>
@@ -200,16 +200,16 @@ export function ProfessionalTemplate({ profile, technologies, theme }: Professio
                     <span>★ {project.stargazers_count} stars</span>
                     <span>⑂ {project.forks_count} forks</span>
                   </div>
-                  
+
                   {project.topics && project.topics.length > 0 && (
                     <div className="flex flex-wrap gap-2">
                       {project.topics.slice(0, 5).map((topic: string) => (
                         <span
                           key={topic}
                           className="rounded border px-2 py-1 text-xs"
-                          style={{ 
+                          style={{
                             borderColor: colors.border,
-                            color: colors.textMuted 
+                            color: colors.textMuted
                           }}
                         >
                           {topic}

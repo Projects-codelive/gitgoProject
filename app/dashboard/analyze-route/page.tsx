@@ -7,6 +7,7 @@ import { ArchitectureDiagram } from "@/components/ArchitectureDiagram";
 import { SubscriptionGate } from "@/components/SubscriptionGate";
 import Link from "next/link";
 import toast from "react-hot-toast";
+import { SidebarTrigger } from "@/components/ui/sidebar";
 
 // ─── Types ────────────────────────────────────────────────────────────────────
 
@@ -195,7 +196,7 @@ function AnalyzeRouteContent() {
         if (forceReload) url.searchParams.set("forceReload", "true");
 
         const response = await fetch(url.toString());
-        
+
         // Check if response is ok before parsing JSON
         if (!response.ok) {
           let errorMsg = `Request failed with status ${response.status}`;
@@ -206,14 +207,14 @@ function AnalyzeRouteContent() {
             // If JSON parsing fails, use the status text
             errorMsg = response.statusText || errorMsg;
           }
-          
+
           // Handle specific status codes
           if (response.status === 401 || response.status === 404) {
             setError(errorMsg);
             toast.error(errorMsg, { id: toastId });
             return;
           }
-          
+
           if (response.status === 402) {
             console.error(
               `[analyze-route] Rate limit exceeded for route "${route}":`,
@@ -225,13 +226,13 @@ function AnalyzeRouteContent() {
             toast.error("Rate limit exceeded. Please upgrade your plan.", { id: toastId });
             return;
           }
-          
+
           // Other errors
           setError(errorMsg);
           toast.error(errorMsg, { id: toastId });
           return;
         }
-        
+
         const data = await response.json();
 
         // ── 500 or other errors ──
@@ -366,12 +367,15 @@ function AnalyzeRouteContent() {
     <div className="mx-auto max-w-4xl px-4 py-8">
       {/* Header */}
       <div className="mb-8">
-        <Link
-          href="/dashboard"
-          className="mb-4 inline-flex items-center gap-1.5 text-sm font-medium text-indigo-400 transition hover:text-indigo-300"
-        >
-          ← Back to Dashboard
-        </Link>
+        <div className="flex items-center gap-4 mb-4">
+          <SidebarTrigger className="md:hidden text-slate-300 hover:text-white" />
+          <Link
+            href="/dashboard"
+            className="inline-flex items-center gap-1.5 text-sm font-medium text-indigo-400 transition hover:text-indigo-300"
+          >
+            ← Back to Dashboard
+          </Link>
+        </div>
 
         <div className="mt-2 flex flex-wrap items-start justify-between gap-3">
           <div>

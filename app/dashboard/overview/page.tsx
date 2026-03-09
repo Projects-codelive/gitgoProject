@@ -3,16 +3,17 @@
 import { useEffect, useState } from "react"
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
 import { Badge } from "@/components/ui/badge"
+import { SidebarTrigger } from "@/components/ui/sidebar"
 import { Button } from "@/components/ui/button"
 import { Progress } from "@/components/ui/progress"
-import { 
-  LayoutDashboard, 
-  Compass, 
-  Award, 
-  Database, 
-  FolderGit2, 
-  Search, 
-  Users, 
+import {
+  LayoutDashboard,
+  Compass,
+  Award,
+  Database,
+  FolderGit2,
+  Search,
+  Users,
   FileUser,
   TrendingUp,
   GitBranch,
@@ -240,7 +241,8 @@ export default function OverviewPage() {
     <div className="flex flex-col">
       {/* Header */}
       <div className="border-b border-border bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/60">
-        <div className="flex h-16 items-center px-6">
+        <div className="flex h-16 items-center px-6 gap-4">
+          <SidebarTrigger className="md:hidden" />
           <h1 className="text-2xl font-bold">App Overview</h1>
         </div>
       </div>
@@ -467,7 +469,7 @@ export default function OverviewPage() {
             <div className="flex items-center justify-between">
               <div className="flex items-center gap-2 text-sm text-muted-foreground">
                 <Clock className="h-4 w-4" />
-                <span>Last synced: {new Date().toLocaleDateString()}</span>
+                <span>Last synced: {!loading ? new Date().toLocaleDateString() : '...'}</span>
               </div>
               <Link href="/dashboard/repo-sync">
                 <Button variant="outline" size="sm">

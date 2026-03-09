@@ -48,11 +48,14 @@ const groqMatch1 = new Groq({ apiKey: process.env.GROQ_API_KEY_FOR_OPEN_SOUCE_FI
 const groqMatch2 = new Groq({ apiKey: process.env.GROQ_API_KEY_FOR_OPEN_SOUCE_FINDING_2 });
 const groqMatch3 = new Groq({ apiKey: process.env.GROQ_API_KEY_FOR_OPEN_SOUCE_FINDING_3 });
 
-/** Pick groq1, groq2, or groq3 based on route index (round-robin). */
+/** Pick groq1, groq2, or groq3 based on route index (round-robin).
+ *  Falls back to groqMain if secondary keys are not configured in .env */
 function pickSecondaryClient(routeIndex: number): Groq {
+    if (!process.env.GROQ_API_KEY_1) return groqMain;
     const remainder = routeIndex % 3;
     if (remainder === 0) return groq1;
     if (remainder === 1) return groq2;
+    if (!process.env.GROQ_API_KEY_3) return groqMain;
     return groq3;
 }
 

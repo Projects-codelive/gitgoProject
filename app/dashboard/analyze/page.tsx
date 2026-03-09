@@ -184,6 +184,7 @@ function AnalyzeContent() {
                 handleAnalyze(false, url)
               }}
               disabled={loading}
+              suppressHydrationWarning
               className="rounded-md bg-muted px-2 py-1 text-xs text-muted-foreground transition-colors hover:bg-muted/80 hover:text-foreground disabled:opacity-50"
             >
               {url.split("/").slice(-2).join("/")}

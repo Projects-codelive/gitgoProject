@@ -32,8 +32,8 @@ export default function SettingsPage() {
       <DashboardHeader title="Settings" />
 
       <div className="flex flex-1 flex-col gap-6 p-6 lg:flex-row">
-        {/* Settings sidebar */}
-        <nav className="flex shrink-0 flex-row gap-1 lg:w-56 lg:flex-col">
+        {/* Settings sidebar / top-nav on mobile */}
+        <nav className="flex shrink-0 overflow-x-auto gap-1 pb-1 lg:w-56 lg:flex-col lg:overflow-visible lg:pb-0">
           {tabs.map((tab) => {
             const Icon = tab.icon
             return (
@@ -41,14 +41,14 @@ export default function SettingsPage() {
                 key={tab.id}
                 onClick={() => setActiveTab(tab.id)}
                 className={cn(
-                  "flex items-center gap-2.5 rounded-lg px-3 py-2 text-sm font-medium transition-colors",
+                  "flex shrink-0 items-center gap-2.5 rounded-lg px-3 py-2 text-sm font-medium transition-colors",
                   activeTab === tab.id
                     ? "bg-accent text-foreground"
                     : "text-muted-foreground hover:bg-accent/50 hover:text-foreground"
                 )}
               >
-                <Icon className="h-4 w-4" />
-                {tab.label}
+                <Icon className="h-4 w-4 shrink-0" />
+                <span className="whitespace-nowrap">{tab.label}</span>
               </button>
             )
           })}

@@ -103,7 +103,7 @@ export function Hero() {
         </div>
 
         {/* Stats */}
-        <div ref={statsRef} className="mt-24 grid grid-cols-3 gap-8 border-t border-border/50 pt-12">
+        <div ref={statsRef} className="mt-24 grid grid-cols-1 sm:grid-cols-3 gap-8 border-t border-border/50 pt-12">
           <div className="flex flex-col items-center gap-2">
             <div className="flex items-center gap-2">
               <GitBranch className="h-5 w-5 text-primary" />

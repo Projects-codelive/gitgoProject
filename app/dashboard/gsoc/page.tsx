@@ -440,22 +440,59 @@ export default function GsocPage() {
           )}
         </div>
 
-        {/* Organizations table */}
-        {loading ? (
-          <div className="flex items-center justify-center py-12">
-            <div className="text-center">
-              <div className="h-8 w-8 animate-spin rounded-full border-4 border-primary border-t-transparent mx-auto mb-4" />
-              <p className="text-sm text-muted-foreground">Loading GSoC organizations...</p>
-            </div>
+        {/* Organizations — Mobile Cards */}
+        {!loading && filteredOrgs.length > 0 && (
+          <div className="flex flex-col gap-3 md:hidden">
+            {filteredOrgs.map((org, index) => (
+              <div
+                key={`${org.name}-${index}`}
+                className="rounded-lg border border-border bg-card p-4 space-y-3"
+              >
+                <div className="flex items-start justify-between gap-2">
+                  <div>
+                    <div className="font-semibold text-foreground">{org.name}</div>
+                    <div className="text-xs text-muted-foreground mt-1 line-clamp-2">{org.description}</div>
+                  </div>
+                  <div className="flex gap-1 shrink-0">
+                    {org.url && (
+                      <a href={org.url} target="_blank" rel="noopener noreferrer" title="Website"
+                        className="flex h-7 w-7 items-center justify-center rounded-md hover:bg-secondary text-muted-foreground">
+                        <ExternalLink className="h-3.5 w-3.5" />
+                      </a>
+                    )}
+                    {org.ideas_list && (
+                      <a href={org.ideas_list} target="_blank" rel="noopener noreferrer" title="Project Ideas"
+                        className="flex h-7 w-7 items-center justify-center rounded-md hover:bg-secondary text-muted-foreground">
+                        <Calendar className="h-3.5 w-3.5" />
+                      </a>
+                    )}
+                  </div>
+                </div>
+                <div className="flex flex-wrap gap-1">
+                  <Badge variant="outline" className="text-xs">{org.category}</Badge>
+                  {org.technologies.slice(0, 3).map((tech, idx) => (
+                    <Badge key={idx} variant="secondary" className="bg-primary/10 text-primary text-xs">{tech}</Badge>
+                  ))}
+                  {org.technologies.length > 3 && (
+                    <Badge variant="secondary" className="text-xs">+{org.technologies.length - 3}</Badge>
+                  )}
+                </div>
+                <div className="flex flex-wrap gap-1">
+                  {org.topics.slice(0, 3).map((topic, idx) => (
+                    <Badge key={idx} variant="outline" className="text-xs text-muted-foreground">{topic}</Badge>
+                  ))}
+                  {org.topics.length > 3 && (
+                    <Badge variant="outline" className="text-xs text-muted-foreground">+{org.topics.length - 3}</Badge>
+                  )}
+                </div>
+              </div>
+            ))}
           </div>
-        ) : filteredOrgs.length === 0 ? (
-          <div className="flex items-center justify-center py-12">
-            <p className="text-muted-foreground">
-              No organizations found. Try adjusting your filters.
-            </p>
-          </div>
-        ) : (
-          <div className="rounded-lg border border-border bg-card overflow-hidden">
+        )}
+
+        {/* Organizations — Desktop Table */}
+        {!loading && filteredOrgs.length > 0 && (
+          <div className="hidden md:block rounded-lg border border-border bg-card overflow-hidden">
             <div className="overflow-x-auto">
               <table className="w-full">
                 <thead className="bg-secondary border-b border-border">
@@ -571,6 +608,15 @@ export default function GsocPage() {
                 </tbody>
               </table>
             </div>
+          </div>
+        )}
+
+        {/* Empty state */}
+        {!loading && filteredOrgs.length === 0 && (
+          <div className="flex items-center justify-center py-12">
+            <p className="text-muted-foreground">
+              No organizations found. Try adjusting your filters.
+            </p>
           </div>
         )}
       </div>

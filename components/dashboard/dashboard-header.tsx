@@ -14,7 +14,7 @@ import { NotificationPanel } from "@/components/dashboard/notification-panel"
 export function DashboardHeader({ title }: { title: string }) {
   return (
     <header className="flex h-14 items-center gap-4 border-b border-border px-6">
-      <SidebarTrigger />
+      <SidebarTrigger className="md:hidden" />
       <Separator orientation="vertical" className="h-5" />
       <h1 className="text-sm font-medium text-foreground">{title}</h1>
       <div className="ml-auto flex items-center gap-2">

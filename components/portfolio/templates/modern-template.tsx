@@ -14,23 +14,23 @@ export function ModernTemplate({ profile, technologies, theme }: ModernTemplateP
   const { colors } = theme
   const userName = profile.user.name || profile.user.login
   const userBio = profile.user.bio || "Developer | Open Source Contributor"
-  
+
   const topProjects = [...profile.repos]
     .sort((a, b) => b.stargazers_count - a.stargazers_count)
     .slice(0, 6)
-  
+
   const topSkills = technologies?.mostUsed?.slice(0, 12) || []
 
   return (
-    <div 
+    <div
       className="min-h-screen"
-      style={{ 
+      style={{
         background: `linear-gradient(135deg, ${colors.background} 0%, ${colors.secondary} 100%)`,
-        color: colors.text 
+        color: colors.text
       }}
     >
       {/* Hero Section with Gradient */}
-      <div 
+      <div
         className="relative overflow-hidden px-8 py-20"
         style={{
           background: `linear-gradient(135deg, ${colors.primary}15 0%, ${colors.accent}15 100%)`
@@ -42,7 +42,7 @@ export function ModernTemplate({ profile, technologies, theme }: ModernTemplateP
             backgroundSize: '40px 40px'
           }} />
         </div>
-        
+
         <div className="relative mx-auto max-w-4xl text-center">
           <Avatar className="mx-auto mb-6 h-32 w-32 border-4" style={{ borderColor: colors.primary }}>
             <AvatarImage src={profile.user.avatar_url} alt={userName} />
@@ -50,14 +50,14 @@ export function ModernTemplate({ profile, technologies, theme }: ModernTemplateP
               {userName.slice(0, 2).toUpperCase()}
             </AvatarFallback>
           </Avatar>
-          
+
           <h1 className="mb-4 text-5xl font-bold" style={{ color: colors.text }}>
             {userName}
           </h1>
           <p className="mb-6 text-xl" style={{ color: colors.textMuted }}>
             {userBio}
           </p>
-          
+
           <div className="mb-6 flex items-center justify-center gap-6 text-sm" style={{ color: colors.textMuted }}>
             {profile.user.location && (
               <span className="flex items-center gap-2">
@@ -72,16 +72,16 @@ export function ModernTemplate({ profile, technologies, theme }: ModernTemplateP
               </span>
             )}
           </div>
-          
+
           <div className="flex items-center justify-center gap-4">
             <a
               href={`https://github.com/${profile.user.login}`}
               target="_blank"
               rel="noopener noreferrer"
               className="flex items-center gap-2 rounded-full px-6 py-3 font-medium transition-all hover:scale-105"
-              style={{ 
+              style={{
                 background: colors.primary,
-                color: colors.background 
+                color: colors.background
               }}
             >
               <Github className="h-5 w-5" />
@@ -91,7 +91,7 @@ export function ModernTemplate({ profile, technologies, theme }: ModernTemplateP
               <a
                 href={`mailto:${profile.user.email}`}
                 className="flex items-center gap-2 rounded-full px-6 py-3 font-medium transition-all hover:scale-105"
-                style={{ 
+                style={{
                   background: colors.surface,
                   color: colors.text,
                   border: `1px solid ${colors.border}`
@@ -107,7 +107,7 @@ export function ModernTemplate({ profile, technologies, theme }: ModernTemplateP
 
       {/* Stats Section */}
       <div className="mx-auto max-w-4xl px-8 py-12">
-        <div className="grid grid-cols-3 gap-6">
+        <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
           {[
             { label: "Repositories", value: profile.stats.totalRepos, icon: GitFork },
             { label: "Stars Earned", value: profile.stats.totalStars, icon: Star },
@@ -116,7 +116,7 @@ export function ModernTemplate({ profile, technologies, theme }: ModernTemplateP
             <div
               key={stat.label}
               className="rounded-2xl p-6 text-center transition-transform hover:scale-105"
-              style={{ 
+              style={{
                 background: colors.surface,
                 border: `1px solid ${colors.border}`
               }}
@@ -144,7 +144,7 @@ export function ModernTemplate({ profile, technologies, theme }: ModernTemplateP
               <span
                 key={skill.technology}
                 className="group relative cursor-pointer rounded-full px-5 py-2.5 font-medium transition-all hover:scale-105"
-                style={{ 
+                style={{
                   background: `${colors.primary}20`,
                   color: colors.primary,
                   border: `1px solid ${colors.primary}40`
@@ -152,11 +152,11 @@ export function ModernTemplate({ profile, technologies, theme }: ModernTemplateP
                 title={`Used in ${skill.totalProjects} project${skill.totalProjects !== 1 ? 's' : ''}`}
               >
                 {skill.technology}
-                <span 
+                <span
                   className="ml-2 rounded-full px-2 py-0.5 text-xs"
-                  style={{ 
+                  style={{
                     background: colors.primary,
-                    color: colors.background 
+                    color: colors.background
                   }}
                 >
                   {skill.totalProjects}
@@ -181,7 +181,7 @@ export function ModernTemplate({ profile, technologies, theme }: ModernTemplateP
                 target="_blank"
                 rel="noopener noreferrer"
                 className="group rounded-2xl p-6 transition-all hover:scale-105"
-                style={{ 
+                style={{
                   background: colors.surface,
                   border: `1px solid ${colors.border}`
                 }}
@@ -190,18 +190,18 @@ export function ModernTemplate({ profile, technologies, theme }: ModernTemplateP
                   <h3 className="text-xl font-semibold" style={{ color: colors.text }}>
                     {project.name}
                   </h3>
-                  <ExternalLink 
-                    className="h-5 w-5 opacity-0 transition-opacity group-hover:opacity-100" 
+                  <ExternalLink
+                    className="h-5 w-5 opacity-0 transition-opacity group-hover:opacity-100"
                     style={{ color: colors.primary }}
                   />
                 </div>
-                
+
                 {project.description && (
                   <p className="mb-4 line-clamp-2" style={{ color: colors.textMuted }}>
                     {project.description}
                   </p>
                 )}
-                
+
                 <div className="mb-4 flex items-center gap-4 text-sm" style={{ color: colors.textMuted }}>
                   <span className="flex items-center gap-1">
                     <Star className="h-4 w-4" />
@@ -212,14 +212,14 @@ export function ModernTemplate({ profile, technologies, theme }: ModernTemplateP
                     {project.forks_count}
                   </span>
                 </div>
-                
+
                 <div className="flex flex-wrap gap-2">
                   {project.language && (
-                    <span 
+                    <span
                       className="rounded-full px-3 py-1 text-xs font-medium"
-                      style={{ 
+                      style={{
                         background: `${colors.primary}20`,
-                        color: colors.primary 
+                        color: colors.primary
                       }}
                     >
                       {project.language}
@@ -229,9 +229,9 @@ export function ModernTemplate({ profile, technologies, theme }: ModernTemplateP
                     <span
                       key={topic}
                       className="rounded-full px-3 py-1 text-xs"
-                      style={{ 
+                      style={{
                         background: `${colors.accent}20`,
-                        color: colors.accent 
+                        color: colors.accent
                       }}
                     >
                       {topic}

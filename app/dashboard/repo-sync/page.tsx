@@ -2,6 +2,7 @@
 
 import { useState, useEffect } from "react"
 import { Button } from "@/components/ui/button"
+import { SidebarTrigger } from "@/components/ui/sidebar"
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
 import { Badge } from "@/components/ui/badge"
 import { Loader2, RefreshCw, Database, TrendingUp, Clock, CheckCircle2 } from "lucide-react"
@@ -29,7 +30,7 @@ export default function RepoSyncPage() {
     try {
       const response = await fetch("/api/repos/sync")
       const data = await response.json()
-      
+
       if (data.success) {
         setStats(data.stats)
       } else {
@@ -78,20 +79,23 @@ export default function RepoSyncPage() {
 
   const topLanguages = stats?.byLanguage
     ? Object.entries(stats.byLanguage)
-        .sort(([, a], [, b]) => b - a)
-        .slice(0, 10)
+      .sort(([, a], [, b]) => b - a)
+      .slice(0, 10)
     : []
 
   return (
     <div className="container mx-auto p-6 space-y-6">
-      <div className="flex items-center justify-between">
-        <div>
-          <h1 className="text-3xl font-bold">Repository Sync Pipeline</h1>
-          <p className="text-muted-foreground mt-1">
-            Manage contributor-friendly repository database for the Explore page
-          </p>
+      <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
+        <div className="flex items-start gap-4">
+          <SidebarTrigger className="md:hidden mt-2" />
+          <div>
+            <h1 className="text-2xl sm:text-3xl font-bold">Repository Sync Pipeline</h1>
+            <p className="text-muted-foreground mt-1">
+              Manage contributor-friendly repository database for the Explore page
+            </p>
+          </div>
         </div>
-        <div className="flex gap-2">
+        <div className="flex flex-wrap gap-2">
           <Button
             onClick={() => fetchStats()}
             disabled={loading}
@@ -140,8 +144,8 @@ export default function RepoSyncPage() {
             <div className="space-y-1">
               <p className="text-sm font-medium">About This Database</p>
               <p className="text-xs text-muted-foreground">
-                This shows stats for the curated open-source repository database used in the Explore page. 
-                These are NOT your personal repos - they're contributor-friendly projects from across GitHub. 
+                This shows stats for the curated open-source repository database used in the Explore page.
+                These are NOT your personal repos - they're contributor-friendly projects from across GitHub.
                 Click "Sync GitHub" to populate the database with repositories that have good first issues.
               </p>
             </div>

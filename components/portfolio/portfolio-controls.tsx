@@ -158,11 +158,10 @@ export function PortfolioControls({
             <button
               key={key}
               onClick={() => onTemplateChange(key as TemplateType)}
-              className={`w-full rounded-lg border p-3 text-left transition-colors ${
-                selectedTemplate === key
+              className={`w-full rounded-lg border p-3 text-left transition-colors ${selectedTemplate === key
                   ? "border-primary/40 bg-primary/5 text-foreground"
                   : "border-border text-muted-foreground hover:border-border hover:bg-secondary"
-              }`}
+                }`}
             >
               <div className="flex items-center justify-between">
                 <div>
@@ -188,19 +187,18 @@ export function PortfolioControls({
             Color Theme
           </span>
         </div>
-        <div className="grid grid-cols-2 gap-2">
+        <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
           {Object.entries(colorThemes).map(([key, theme]) => (
             <button
               key={key}
               onClick={() => onThemeChange(key as ColorTheme)}
-              className={`flex items-center gap-2 rounded-lg border p-2.5 text-sm transition-colors ${
-                selectedTheme === key
+              className={`flex items-center gap-2 rounded-lg border p-2.5 text-sm transition-colors ${selectedTheme === key
                   ? "border-primary/40 bg-primary/5 text-foreground"
                   : "border-border text-muted-foreground hover:border-border hover:bg-secondary"
-              }`}
+                }`}
             >
-              <div 
-                className="h-5 w-5 rounded-full border border-border" 
+              <div
+                className="h-5 w-5 rounded-full border border-border"
                 style={{ background: theme.colors.primary }}
               />
               <span className="flex-1 text-left">{theme.name}</span>

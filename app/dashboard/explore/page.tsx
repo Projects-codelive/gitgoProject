@@ -73,7 +73,7 @@ export default function ExplorePage() {
       })
       const response = await fetch(`/api/repos/explore?${params}`)
       if (!response.ok) throw new Error("Failed to fetch repositories")
-      
+
       const data = await response.json()
       if (data.success) {
         setRepos(data.repos)
@@ -109,24 +109,26 @@ export default function ExplorePage() {
       <div className="flex-1 p-6">
         {/* Search and category header */}
         <div className="mb-8">
-          <div className="mb-1 flex items-center gap-3">
-            <div className="flex h-10 w-10 items-center justify-center rounded-lg bg-primary/10">
-              <Compass className="h-5 w-5 text-primary" />
-            </div>
-            <div className="flex-1">
-              <h2 className="text-lg font-semibold text-foreground">
-                Explore Open Source
-              </h2>
-              <p className="text-sm text-muted-foreground">
-                Discover contributor-friendly repositories from our curated database
-              </p>
+          <div className="mb-1 flex flex-col gap-3 sm:flex-row sm:items-center">
+            <div className="flex items-center gap-3">
+              <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-lg bg-primary/10">
+                <Compass className="h-5 w-5 text-primary" />
+              </div>
+              <div className="flex-1">
+                <h2 className="text-lg font-semibold text-foreground">
+                  Explore Open Source
+                </h2>
+                <p className="text-sm text-muted-foreground">
+                  Discover contributor-friendly repositories from our curated database
+                </p>
+              </div>
             </div>
             <Button
               variant="outline"
               size="sm"
               onClick={fetchRepos}
               disabled={loading}
-              className="gap-2"
+              className="gap-2 sm:ml-auto"
             >
               {loading ? (
                 <Loader2 className="h-4 w-4 animate-spin" />
@@ -197,7 +199,7 @@ export default function ExplorePage() {
 
         {/* Repo grid */}
         {!loading && !error && filteredRepos.length > 0 && (
-          <div className="grid gap-6 lg:grid-cols-2">
+          <div className="grid gap-6 sm:grid-cols-2">
             {filteredRepos.map((repo) => {
               const [owner, repoName] = repo.fullName.split("/")
               return (

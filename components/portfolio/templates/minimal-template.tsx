@@ -13,19 +13,19 @@ export function MinimalTemplate({ profile, technologies, theme }: MinimalTemplat
   const { colors } = theme
   const userName = profile.user.name || profile.user.login
   const userBio = profile.user.bio || "Developer | Open Source Contributor"
-  
+
   const topProjects = [...profile.repos]
     .sort((a, b) => b.stargazers_count - a.stargazers_count)
     .slice(0, 8)
-  
+
   const topSkills = technologies?.mostUsed?.slice(0, 15) || []
 
   return (
-    <div 
+    <div
       className="min-h-screen px-8 py-16"
-      style={{ 
+      style={{
         background: colors.background,
-        color: colors.text 
+        color: colors.text
       }}
     >
       <div className="mx-auto max-w-2xl">
@@ -37,7 +37,7 @@ export function MinimalTemplate({ profile, technologies, theme }: MinimalTemplat
           <p className="mb-6 text-lg font-light" style={{ color: colors.textMuted }}>
             {userBio}
           </p>
-          
+
           <div className="mb-4 flex flex-wrap gap-4 text-sm" style={{ color: colors.textMuted }}>
             {profile.user.location && (
               <span className="flex items-center gap-1.5">
@@ -52,7 +52,7 @@ export function MinimalTemplate({ profile, technologies, theme }: MinimalTemplat
               </span>
             )}
           </div>
-          
+
           <div className="flex gap-4 text-sm">
             <a
               href={`https://github.com/${profile.user.login}`}
@@ -79,7 +79,7 @@ export function MinimalTemplate({ profile, technologies, theme }: MinimalTemplat
 
         {/* Stats */}
         <section className="mb-16 border-l-2 pl-6" style={{ borderColor: colors.border }}>
-          <div className="grid grid-cols-3 gap-8">
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-8">
             <div>
               <div className="text-3xl font-light" style={{ color: colors.text }}>
                 {profile.stats.totalRepos}
@@ -149,13 +149,13 @@ export function MinimalTemplate({ profile, technologies, theme }: MinimalTemplat
                     </h3>
                     <ExternalLink className="h-4 w-4 opacity-0 transition-opacity group-hover:opacity-100" style={{ color: colors.primary }} />
                   </a>
-                  
+
                   {project.description && (
                     <p className="mb-3 font-light" style={{ color: colors.textMuted }}>
                       {project.description}
                     </p>
                   )}
-                  
+
                   <div className="flex flex-wrap gap-3 text-sm" style={{ color: colors.textMuted }}>
                     {project.language && (
                       <span>{project.language}</span>

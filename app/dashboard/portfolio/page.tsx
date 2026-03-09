@@ -166,17 +166,17 @@ export default function PortfolioPage() {
         {isPublished && (
           <Card className="mb-6 border-green-500/20 bg-green-500/5">
             <CardContent className="pt-6">
-              <div className="flex items-center justify-between gap-4">
-                <div className="flex-1">
+              <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
+                <div className="flex-1 min-w-0">
                   <Label className="text-xs text-muted-foreground">Your Portfolio URL</Label>
-                  <div className="flex items-center gap-2 mt-1">
-                    <code className="text-sm font-mono text-green-400">{portfolioUrl}</code>
-                    <Badge variant="secondary" className="bg-green-500/20 text-green-400">
+                  <div className="flex items-center gap-2 mt-1 overflow-hidden">
+                    <code className="text-sm font-mono text-green-400 truncate">{portfolioUrl}</code>
+                    <Badge variant="secondary" className="bg-green-500/20 text-green-400 shrink-0">
                       Live
                     </Badge>
                   </div>
                 </div>
-                <div className="flex gap-2">
+                <div className="flex flex-wrap gap-2">
                   <Button size="sm" variant="outline" onClick={handlePreview}>
                     <Eye className="h-4 w-4 mr-2" />
                     Preview
@@ -264,11 +264,10 @@ export default function PortfolioPage() {
                 <button
                   key={t}
                   onClick={() => setTheme(t)}
-                  className={`p-4 rounded-lg border-2 transition-all ${
-                    theme === t
+                  className={`p-4 rounded-lg border-2 transition-all ${theme === t
                       ? "border-primary bg-primary/10"
                       : "border-border hover:border-primary/50"
-                  }`}
+                    }`}
                 >
                   <div className="text-sm font-medium capitalize">{t}</div>
                 </button>
@@ -278,24 +277,22 @@ export default function PortfolioPage() {
         </Card>
 
         {/* Actions */}
-        <div className="flex gap-4">
-          <Button 
-            onClick={handlePreview} 
-            disabled={!username} 
-            variant="outline" 
-            className="flex-1"
+        <div className="grid grid-cols-1 gap-3 sm:grid-cols-3">
+          <Button
+            onClick={handlePreview}
+            disabled={!username}
+            variant="outline"
           >
             <Eye className="h-4 w-4 mr-2" />
             Preview
           </Button>
-          <Button onClick={handleSave} disabled={saving} variant="outline" className="flex-1">
+          <Button onClick={handleSave} disabled={saving} variant="outline">
             {saving ? <Loader2 className="h-4 w-4 animate-spin mr-2" /> : null}
             Save Changes
           </Button>
           <Button
             onClick={handlePublish}
             disabled={saving || !username}
-            className="flex-1"
           >
             {saving ? <Loader2 className="h-4 w-4 animate-spin mr-2" /> : null}
             {isPublished ? "Update Portfolio" : "Publish Portfolio"}

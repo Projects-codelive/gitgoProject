@@ -2,13 +2,15 @@
 
 import { useEffect, useRef, useState } from "react"
 import Link from "next/link"
-import { Github, Terminal } from "lucide-react"
+import { Github, Terminal, Menu } from "lucide-react"
 import { Button } from "@/components/ui/button"
+import { Sheet, SheetContent, SheetTrigger, SheetTitle } from "@/components/ui/sheet"
 import gsap from "gsap"
 
 export function Navbar() {
   const navRef = useRef<HTMLElement>(null)
   const [scrolled, setScrolled] = useState(false)
+  const [mobileMenuOpen, setMobileMenuOpen] = useState(false)
 
   useEffect(() => {
     const ctx = gsap.context(() => {
@@ -34,11 +36,10 @@ export function Navbar() {
   return (
     <header
       ref={navRef}
-      className={`fixed top-0 z-50 w-full transition-all duration-300 ${
-        scrolled
-          ? "border-b border-border/50 bg-background/95 backdrop-blur-xl shadow-sm"
-          : "border-b border-transparent bg-transparent"
-      }`}
+      className={`fixed top-0 z-50 w-full transition-all duration-300 ${scrolled
+        ? "border-b border-border/50 bg-background/95 backdrop-blur-xl shadow-sm"
+        : "border-b border-transparent bg-transparent"
+        }`}
     >
       <nav className="mx-auto flex h-16 max-w-7xl items-center justify-between px-6">
         <Link href="/" className="flex items-center gap-2 transition-transform hover:scale-105">
@@ -67,7 +68,7 @@ export function Navbar() {
             Dashboard
           </Link>
         </div>
-        <div className="flex items-center gap-3">
+        <div className="hidden md:flex items-center gap-3">
           <Button variant="ghost" size="sm" className="text-muted-foreground hover:text-foreground" asChild>
             <Link href="/onboarding">Sign In</Link>
           </Button>
@@ -77,6 +78,57 @@ export function Navbar() {
               Get Started
             </Link>
           </Button>
+        </div>
+
+        {/* Mobile Navigation */}
+        <div className="md:hidden flex items-center">
+          <Sheet open={mobileMenuOpen} onOpenChange={setMobileMenuOpen}>
+            <SheetTrigger asChild>
+              <Button variant="ghost" size="icon" className="text-foreground">
+                <Menu className="h-6 w-6" />
+                <span className="sr-only">Toggle Menu</span>
+              </Button>
+            </SheetTrigger>
+            <SheetContent side="right" className="w-[300px] sm:w-[400px]">
+              {/* Added accessible Title */}
+              <SheetTitle className="sr-only">Navigation Menu</SheetTitle>
+              <div className="flex flex-col gap-6 mt-8">
+                <Link
+                  href="#features"
+                  onClick={() => setMobileMenuOpen(false)}
+                  className="text-lg font-medium text-foreground hover:text-primary transition-colors"
+                >
+                  Features
+                </Link>
+                <Link
+                  href="#how-it-works"
+                  onClick={() => setMobileMenuOpen(false)}
+                  className="text-lg font-medium text-foreground hover:text-primary transition-colors"
+                >
+                  How It Works
+                </Link>
+                <Link
+                  href="/dashboard"
+                  onClick={() => setMobileMenuOpen(false)}
+                  className="text-lg font-medium text-foreground hover:text-primary transition-colors"
+                >
+                  Dashboard
+                </Link>
+                <hr className="border-border/50" />
+                <div className="flex flex-col gap-3">
+                  <Button variant="outline" className="w-full justify-center" asChild onClick={() => setMobileMenuOpen(false)}>
+                    <Link href="/onboarding">Sign In</Link>
+                  </Button>
+                  <Button className="w-full justify-center bg-primary text-primary-foreground" asChild onClick={() => setMobileMenuOpen(false)}>
+                    <Link href="/onboarding">
+                      <Github className="mr-2 h-4 w-4" />
+                      Get Started
+                    </Link>
+                  </Button>
+                </div>
+              </div>
+            </SheetContent>
+          </Sheet>
         </div>
       </nav>
     </header>
