@@ -13,7 +13,7 @@ import toast from "react-hot-toast"
 
 function AnalyzeContent() {
   const searchParams = useSearchParams()
-  const initialRepoUrl = searchParams.get("repoUrl") || ""
+  const initialRepoUrl = searchParams.get("repoUrl") || searchParams.get("url") || ""
 
   const [repoUrl, setRepoUrl] = useState(initialRepoUrl)
   const [loading, setLoading] = useState(false)
@@ -96,14 +96,17 @@ function AnalyzeContent() {
     }
   }
 
-  // Auto-fetch if repoUrl is in searchParams on mount
+  // Auto-fetch if repoUrl is in searchParams on mount or when it changes via client navigation
   useEffect(() => {
-    if (initialRepoUrl && !hasAutoFetched) {
-      setHasAutoFetched(true)
-      handleAnalyze(false, initialRepoUrl)
+    if (initialRepoUrl) {
+      if (!hasAutoFetched || initialRepoUrl !== repoUrl) {
+        setHasAutoFetched(true)
+        setRepoUrl(initialRepoUrl)
+        handleAnalyze(false, initialRepoUrl)
+      }
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [initialRepoUrl, hasAutoFetched])
+  }, [initialRepoUrl])
 
   const handleForceRefresh = () => {
     handleAnalyze(true)
