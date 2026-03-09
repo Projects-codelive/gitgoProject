@@ -80,20 +80,6 @@ This is where the magic happens. We connect your GitHub repo to Amplify to build
 1. In the AWS Console, search for **AWS Amplify**.
 2. Click **Create new app**.
 3. Select **GitHub**, authorize it, and select your `gitgo-aws-production` repository ([main](file:///c:/Users/Shyam/OneDrive/Desktop/Python/gitgo/source_code/lib/llm.ts#593-601) branch).
-4. **CRITICAL STEP — Build Settings:**
-   GitGo includes a custom [amplify.yml](file:///c:/Users/Shyam/OneDrive/Desktop/Python/gitgo/source_code/amplify.yml) file in the root directory. Amplify will automatically detect this. This file is strictly required because it injects environment variables into `.env.production` during the build phase so they are accessible to the Next.js SSR Lambda at runtime.
-5. Expand the **Advanced Settings -> Environment variables** section and add all 14 required variables:
-
-| Variable Name | Example Value / Description |
-| :--- | :--- |
-| `API_GATEWAY_URL` | `https://xbji4c7k36.execute-api.us-east-1.amazonaws.com` (Add this even if unused) |
-| `CRON_SECRET` | A long random string (e.g., `asdfasdfasdfasdf`) |
-| `DATABASE_MODE` | `dynamodb` |
-| `GITGO_AWS_REGION` | `us-east-1` (Must match where your DB/S3/Bedrock are) |
-| `GITGO_EXECUTION_MODE` | `lambda` |
-| `GITGO_S3_BUCKET_NAME` | `gitgo-resumes-bucket-users` |
-| `GITHUB_CLIENT_ID` | Your GitHub OAuth App Client ID |
-| `GITHUB_CLIENT_SECRET` | Your GitHub OAuth App Client Secret |
 | `GITHUB_TOKEN` | A personal access token starting with `ghp_...` |
 | `LINKEDIN_CLIENT_ID` | Your LinkedIn Auth App Client ID |
 | `LINKEDIN_CLIENT_SECRET` | Your LinkedIn Auth App Client Secret |
@@ -124,7 +110,7 @@ While Amplify is building, you MUST give the auto-generated Amplify Role permiss
 
 ## Step 8: Finalize OAuth Callbacks
 
-Once the Amplify build is complete, you will receive your live production URL (e.g., `https://main.d1u0slbyaty3t3.amplifyapp.com`).
+Once the Amplify build is complete, you will receive your live production URL (e.g., `https://main.[YOUR_APP_ID].amplifyapp.com`).
 
 **Update GitHub OAuth:**
 1. Go to your GitHub Developer Settings -> OAuth Apps -> GitGo.
