@@ -369,3 +369,43 @@ export async function POST(req: NextRequest) {
         }
     })
 }
+
+export async function GET(req: NextRequest) {
+    try {
+        const session = await getServerSession(authOptions)
+        if (!session?.user?.githubId) {
+            return new Response(JSON.stringify({ error: "Unauthorized" }), { status: 401 })
+        }
+
+        await connectDB()
+        const user = await User.findOne({ githubId: String(session.user.githubId) }).lean()
+        if (!user) {
+            return new Response(JSON.stringify({ error: "User not found" }), { status: 404 })
+        }
+
+        const latest = await RecommendationRepository.getLatest(user._id.toString())
+        if (!latest) {
+            return new Response(JSON.stringify({ error: "No cached recommendations found" }), { status: 404 })
+        }
+
+        return new Response(JSON.stringify({
+            categories: latest.categories,
+            meta: {
+                experienceLevel: latest.experienceLevel,
+                hasOSSContributions: latest.hasOSSContributions,
+                contributionNotes: latest.contributionNotes,
+                strengths: latest.strengths || [],
+                weaknesses: latest.weaknesses || [],
+                improvements: latest.improvements || [],
+                isTestProfile: false,
+                generatedAt: latest.createdAt || latest.generatedAt || new Date().toISOString()
+            }
+        }), {
+            status: 200,
+            headers: { "Content-Type": "application/json" }
+        })
+    } catch (err: any) {
+        console.error("GET Recommendations Error:", err)
+        return new Response(JSON.stringify({ error: err.message || "Failed" }), { status: 500 })
+    }
+}

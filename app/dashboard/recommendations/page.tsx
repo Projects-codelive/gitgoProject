@@ -1,6 +1,6 @@
 "use client"
 
-import { useState } from "react"
+import { useState, useEffect, useRef } from "react"
 import { DashboardHeader } from "@/components/dashboard/dashboard-header"
 import { Button } from "@/components/ui/button"
 import { Badge } from "@/components/ui/badge"
@@ -438,12 +438,28 @@ export default function RecommendationsPage() {
         }
     }
 
+    const hasAutoLoaded = useRef(false)
+
     const handleMyProfile = async () => {
         setIsTestMode(false)
         setTestUrl("")
 
         try {
             setLoading(true)
+
+            // 1. Try to load cached recommendations first
+            const cacheRes = await fetch("/api/recommendations")
+            if (cacheRes.ok) {
+                const cacheData = await cacheRes.json()
+                if (cacheData && cacheData.categories && cacheData.categories.length > 0) {
+                    setCategories(cacheData.categories)
+                    setMeta(cacheData.meta)
+                    setLoading(false)
+                    return // Found cache!
+                }
+            }
+
+            // 2. No cache. Check if resume exists before fetching LLM
             const res = await fetch("/api/user/profile")
             const data = await res.json()
             if (data?.user && !data.user.resumeFileName) {
@@ -457,6 +473,14 @@ export default function RecommendationsPage() {
 
         generateRecommendations()
     }
+
+    // Auto-load matches on mount
+    useEffect(() => {
+        if (!hasAutoLoaded.current) {
+            hasAutoLoaded.current = true
+            handleMyProfile()
+        }
+    }, [])
 
     const continueWithoutResume = () => {
         setShowResumePrompt(false)
@@ -496,18 +520,14 @@ export default function RecommendationsPage() {
 
                         {/* Two action modes */}
                         <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                            {/* My Profile */}
-                            <div className="flex flex-col gap-3 rounded-xl border border-border bg-background/60 p-4">
+                            {/* Auto Load info */}
+                            <div className="flex flex-col gap-3 rounded-xl border border-border bg-background/60 p-4 justify-center">
                                 <div className="flex items-center gap-2">
                                     <User className="h-4 w-4 text-primary" />
                                     <span className="text-sm font-semibold text-foreground">Your Profile</span>
-                                    <Badge variant="outline" className="text-[10px]">Default</Badge>
+                                    <Badge variant="outline" className="text-[10px] bg-primary/10 text-primary border-primary/20">Auto-Loaded</Badge>
                                 </div>
-                                <p className="text-xs text-muted-foreground">Uses your connected GitHub repos, tech stack, skills, and uploaded resume from your account.</p>
-                                <Button onClick={handleMyProfile} disabled={loading} className="gap-2 w-full">
-                                    {loading && !isTestMode ? <Loader2 className="h-4 w-4 animate-spin" /> : <Sparkles className="h-4 w-4" />}
-                                    {loading && !isTestMode ? "Analyzing…" : "Find My Matches"}
-                                </Button>
+                                <p className="text-xs text-muted-foreground">We automatically analyze your GitHub repos, tech stack, skills, and uploaded resume to fetch your matches.</p>
                             </div>
 
                             {/* Test with any GitHub profile */}
@@ -618,7 +638,7 @@ export default function RecommendationsPage() {
                                 className="ml-auto gap-1.5 h-7 text-xs"
                             >
                                 <RefreshCw className="h-3 w-3" />
-                                Regenerate
+                                Force Reload
                             </Button>
                         </div>
                         {meta.contributionNotes && (
@@ -691,9 +711,9 @@ export default function RecommendationsPage() {
                                 <Sparkles className="h-8 w-8 text-muted-foreground" />
                             </div>
                             <div>
-                                <h3 className="text-xl font-semibold text-foreground">Ready to Find Your Matches</h3>
+                                <h3 className="text-xl font-semibold text-foreground">Loading Your Matches</h3>
                                 <p className="text-sm text-muted-foreground mt-2 max-w-md">
-                                    Click <strong>Find My Matches</strong> to get repos personalized to you, or paste any GitHub URL in the dev tester.
+                                    Give us a moment while we fetch your personalized open-source repos, or paste any GitHub URL in the dev tester above.
                                 </p>
                             </div>
                             <div className="flex flex-wrap justify-center gap-2">
