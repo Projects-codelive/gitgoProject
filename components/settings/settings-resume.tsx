@@ -99,8 +99,19 @@ export function SettingsResume() {
       })
 
       if (!res.ok) {
-        const json = await res.json()
-        throw new Error(json.error || "Upload failed")
+        let errorMsg = "Upload failed"
+        if (res.status === 413) {
+          errorMsg = "File too large. Your server/Nginx limit was exceeded."
+        } else {
+          try {
+            const text = await res.text()
+            const json = JSON.parse(text)
+            if (json.error) errorMsg = json.error
+          } catch (e) {
+            errorMsg = `Upload failed with status ${res.status}`
+          }
+        }
+        throw new Error(errorMsg)
       }
 
       const json = await res.json()

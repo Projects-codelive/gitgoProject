@@ -1,0 +1,155 @@
+# Complete AWS Serverless Deployment Guide for GitGo (Next.js 14+)
+
+This guide walks through taking your GitGo codebase and deploying it to a scalable, production-ready AWS Serverless environment using AWS Amplify, DynamoDB, Bedrock, and MongoDB Atlas.
+
+> **CRITICAL ARCHITECTURE NOTE:** GitGo runs in a "dual-database" mode on AWS. Some routes use DynamoDB natively, while NextAuth and User profiles use MongoDB Atlas. AI features are powered by Amazon Bedrock (Amazon Nova Pro).
+
+---
+
+## Step 1: Push Your Code to GitHub
+
+AWS Amplify requires a Git repository to trigger CI/CD builds.
+
+1. Create a private repository on [GitHub](https://github.com/new).
+2. Push your local `source_code` directory to the new [main](file:///c:/Users/Shyam/OneDrive/Desktop/Python/gitgo/source_code/lib/llm.ts#593-601) branch:
+   ```bash
+   git remote add origin https://github.com/YOUR_USERNAME/gitgo-aws-production.git
+   git branch -M main
+   git push -u origin main
+   ```
+
+---
+
+## Step 2: Set Up MongoDB Atlas (Authentication & Profiles)
+
+GitGo uses NextAuth which requires a MongoDB connection to store user session data.
+
+1. Go to [MongoDB Atlas](https://www.mongodb.com/cloud/atlas) and create a free shared cluster.
+2. In the left sidebar, go to **Network Access**.
+3. Click **Add IP Address** -> **Allow Access From Anywhere** (`0.0.0.0/0`).
+    - *Why?* AWS Amplify Lambda functions change IPs constantly. Allowing all IPs is required for the SSR functions to connect to Atlas.
+4. Go to **Database Access** and create a database user. Save the password.
+5. Go back to **Databases** -> **Connect** -> **Drivers** and copy your Connection String (`MONGODB_URI`).
+
+---
+
+## Step 3: Set Up Amazon DynamoDB (Application Data)
+
+GitGo uses DynamoDB for ultra-fast storage of cached repositories, portfolios, and analyses.
+
+1. Open the [AWS Console](https://console.aws.amazon.com) and search for **DynamoDB**.
+2. Click **Create table** and create the following 6 core tables exactly as named (case-sensitive):
+
+| DynamoDB Table Name | Partition Key Name | Key Type |
+| :--- | :--- | :--- |
+| `GitGo-Recommendations` | `userId` | String |
+| `GitGo-Repositories` | `githubId` | String |
+| `GitGo-ContributorFriendlyRepo` | `repoId` | Number |
+| `GitGo-Portfolio` | `userId` | String |
+| `GitGo-RepositoryAnalysis` | `repoId` | Number |
+| `GitGo-RouteCache` | `path` | String |
+
+---
+
+## Step 4: Set Up Amazon S3 (Resumes)
+
+1. In the AWS Console, search for **S3**.
+2. Click **Create bucket**.
+3. Name your bucket: `gitgo-resumes-bucket-users`.
+4. Leave **Block all public access** CHECKED.
+5. Click **Create bucket**.
+
+---
+
+## Step 5: Enable Amazon Bedrock (AI Models)
+
+GitGo uses AWS Bedrock for its AI reasoning (Analyze Repo, Smart Matches). This tutorial uses **Amazon Nova Pro** as it does not require an AWS Marketplace subscription.
+
+1. In the AWS Console, search for **Bedrock**.
+2. In the left sidebar, click **Model access**.
+3. Click **Manage model access** in the top right.
+4. Check the box for **Amazon Nova Pro** (and Claude 3.5 Sonnet if you prefer to use that later).
+5. Click **Save changes** (approval is usually instant).
+
+---
+
+## Step 6: Deploy to AWS Amplify
+
+This is where the magic happens. We connect your GitHub repo to Amplify to build the Next.js frontend and SSR Lambda functions.
+
+1. In the AWS Console, search for **AWS Amplify**.
+2. Click **Create new app**.
+3. Select **GitHub**, authorize it, and select your `gitgo-aws-production` repository ([main](file:///c:/Users/Shyam/OneDrive/Desktop/Python/gitgo/source_code/lib/llm.ts#593-601) branch).
+4. **CRITICAL STEP — Build Settings:**
+   GitGo includes a custom [amplify.yml](file:///c:/Users/Shyam/OneDrive/Desktop/Python/gitgo/source_code/amplify.yml) file in the root directory. Amplify will automatically detect this. This file is strictly required because it injects environment variables into `.env.production` during the build phase so they are accessible to the Next.js SSR Lambda at runtime.
+5. Expand the **Advanced Settings -> Environment variables** section and add all 14 required variables:
+
+| Variable Name | Example Value / Description |
+| :--- | :--- |
+| `API_GATEWAY_URL` | `https://xbji4c7k36.execute-api.us-east-1.amazonaws.com` (Add this even if unused) |
+| `CRON_SECRET` | A long random string (e.g., `asdfasdfasdfasdf`) |
+| `DATABASE_MODE` | `dynamodb` |
+| `GITGO_AWS_REGION` | `us-east-1` (Must match where your DB/S3/Bedrock are) |
+| `GITGO_EXECUTION_MODE` | `lambda` |
+| `GITGO_S3_BUCKET_NAME` | `gitgo-resumes-bucket-users` |
+| `GITHUB_CLIENT_ID` | Your GitHub OAuth App Client ID |
+| `GITHUB_CLIENT_SECRET` | Your GitHub OAuth App Client Secret |
+| `GITHUB_TOKEN` | A personal access token starting with `ghp_...` |
+| `LINKEDIN_CLIENT_ID` | Your LinkedIn Auth App Client ID |
+| `LINKEDIN_CLIENT_SECRET` | Your LinkedIn Auth App Client Secret |
+| `MONGODB_URI` | `mongodb+srv://...` (From Step 2) |
+| `NEXTAUTH_SECRET` | A long random string (Required for production NextAuth) |
+| `NEXTAUTH_URL` | `https://main.xxxxxxxx.amplifyapp.com` (Add this AFTER the first deploy finishes and you get your URL) |
+
+6. Click Next and click **Save and deploy**.
+
+---
+
+## Step 7: Fix Missing IAM Permissions
+
+While Amplify is building, you MUST give the auto-generated Amplify Role permission to talk to Bedrock, DynamoDB, and S3. If you skip this, all API routes will fail with "Access Denied 500".
+
+1. In the Amplify Console, go to your app settings.
+2. Under **App settings -> General**, locate the **Service Role** (it usually looks like `amplifyconsole-backend-role`).
+3. Click the link to open IAM.
+4. *Alternatively*, search IAM -> Roles -> find the `Amplify SSR Compute Role` for your app.
+5. Click **Add permissions** -> **Attach policies**.
+6. Search for and check the boxes for:
+   - `AmazonDynamoDBFullAccess`
+   - `AmazonS3FullAccess`
+   - `AmazonBedrockFullAccess`
+7. Click **Add permissions**.
+
+---
+
+## Step 8: Finalize OAuth Callbacks
+
+Once the Amplify build is complete, you will receive your live production URL (e.g., `https://main.d1u0slbyaty3t3.amplifyapp.com`).
+
+**Update GitHub OAuth:**
+1. Go to your GitHub Developer Settings -> OAuth Apps -> GitGo.
+2. Change the **Homepage URL** to your new Amplify URL.
+3. Change the **Authorization callback URL** to:
+   `https://[YOUR_AMPLIFY_URL]/api/auth/callback/github`
+
+**Update LinkedIn OAuth:**
+1. Go to LinkedIn Developer Portal -> GitGo App -> Auth tab.
+2. Add a new Redirect URL:
+   `https://[YOUR_AMPLIFY_URL]/api/auth/callback/linkedin`
+
+**Update Amplify Environment Variables:**
+1. Go back to AWS Amplify -> Hosting -> Environment variables.
+2. Make sure `NEXTAUTH_URL` is set to exactly your `https://[YOUR_AMPLIFY_URL]` (no trailing slash).
+3. Amplify will auto-redeploy.
+
+---
+
+## Step 9: Launch & Test!
+
+1. Go to your live URL.
+2. **Log in with GitHub**. (This triggers the MongoDB user auto-creation script).
+3. Test **My Tech Stack** -> Ensures MongoDB and GitHub syncing is working.
+4. Test **Analyze Repo** -> Ensures Amazon Bedrock (Nova Pro) has correct IAM permissions and is generating responses inline.
+5. Test **Smart Matches** -> Tests the 3-phase AI chain and database hydration.
+
+If all passed, your GitGo application is successfully running in a highly available, serverless footprint on AWS!
